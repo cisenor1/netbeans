@@ -3,7 +3,6 @@ package WebPageDisplay;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -152,6 +151,7 @@ public class WebPageFrame extends JFrame implements ActionListener {
      *
      * @param ev The event
      */
+    @Override
     public void actionPerformed(ActionEvent ev) {
 
         // get the last URL from the array and use it. then remove if from the list.
@@ -167,7 +167,7 @@ public class WebPageFrame extends JFrame implements ActionListener {
 
 
         if (ev.getSource() == urlField) {
-            URL webSite = null;
+            URL webSite;
             try {
                 previousURLs.add(currentURL);
                 webSite = new URL(urlField.getText());
