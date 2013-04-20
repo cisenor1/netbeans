@@ -47,35 +47,35 @@ public class AirportSim {
     private String eventStatus = "-";
     private String eventPlane;
     private String runwayStatus = "-";
+    private String runwayFreeAtTime;
 
     public void run() {
-        
-        
+
+
         //print Header
         System.out.println("Minute\tPlane\tEvent\t\tRunway\t# Waiting\t# Waiting\tTotal Number\tTotal Number\tRunway Free");
         System.out.println("\tNumber\tStatus\t\tStatus\t  To Land\t To Depart\t   Landed\t  Departed\t  At Time");
-        
-        
+
+
         for (minute = 1; minute <= LENGTH_OF_SIMULATION_IN_HRS * MIN_PER_HOUR; minute++) {
+
             // set the timestamp
             timeStamp = minuteToTime(minute);
-           
+
             // init printed vars
-            
+
             eventStatus = "-";
             eventPlane = "-";
-            
-            checkQueues();
-            
-            runwayIsFree = (minute >= runwayFreeAt);
 
-            if (!runwayIsFree) {
-                clearRunway();
-            }else{
-                runwayStatus = "-";
+            checkQueues();
+
+            if (minute >= runwayFreeAt) {
+                runwayIsFree = true;
             }
-            
-            
+
+            clearRunway();
+
+
 
 
             // is there a plane about to land?
@@ -84,35 +84,36 @@ public class AirportSim {
                 //System.out.println(timeStamp + "  -  Plane " + planeNumber + " is ready to land.");
                 eventPlane = "" + planeNumber;
                 eventStatus = eventPlane + " arrives";
-                runwayStatus = eventPlane + "L";
                 planeNumber++;
-            }else if (readyToTakeOff()) {
+
+            } else if (readyToTakeOff()) {
                 takeOffQueue.add(new Airplane(planeNumber, minute));
                 eventPlane = "" + planeNumber;
                 eventStatus = eventPlane + " departs";
-                runwayStatus = eventPlane + "D";
                 //System.out.println(timeStamp + "  -  Plane " + planeNumber + " is ready to take off.");
                 planeNumber++;
+
             }
-            
+
             // if the runway is free and there is a plane waiting to land, it gets to land, 
-            
-            if (runwayIsFree && landingQueue.size() > 0){
+
+            if (runwayIsFree && landingQueue.size() > 0) {
                 doLanding();
-            }else if (runwayIsFree && takeOffQueue.size() > 0){
+            }
+            if (runwayIsFree && takeOffQueue.size() > 0) {
                 doTakeOff();
             }
-            
-            
+
+
             printLine();
         }
-        
-        
+
+
         calculateAverages();
         showResults();
-        
-        
-        
+
+
+
 
     }
 
@@ -124,56 +125,64 @@ public class AirportSim {
     public static boolean readyToTakeOff() {
         return ((Math.random() * MIN_PER_HOUR) < AVG_ARRIVALS_PER_HOUR);
     }
-    
-    public void clearRunway(){
-        // is a plane still landing?
-                if (landing) {
-                    if (minute == runwayFreeAt) {
-                        //System.out.println(timeStamp + "  -  Plane " + landingQueue.get(0).getId() + " has landed. Runway is free again");
-                        landing = false;
-                        runwayStatus = "-";
-                        planesLanded++;
-                        landingQueue.remove(0);
-                    }
-                }
 
-                //is a plane still taking off?
-                if (takingOff) {
-                    if (minute == runwayFreeAt) {
-                        //System.out.println(timeStamp + "  -  Plane " + takeOffQueue.get(0).getId() + " has taken off. Runway is free again");
-                        takingOff = false; 
-                        runwayStatus = "-";
-                        planesDeparted++;
-                        takeOffQueue.remove(0);
-                    }
-                }
-    }
-    
-    public void doLanding(){
-        Airplane landingPlane = landingQueue.get(0);
-                //System.out.println(timeStamp + "  -  Plane " + landingPlane.getId() + " is landing.");
-                waitTime = (minute - landingPlane.getTimeReady());
-                if(waitTime > maxWaitLanding){
-                    maxWaitLanding = waitTime;
-                }
-                totalWaitTimeLanding += waitTime;
-                runwayFreeAt += LANDING_WAIT_TIME;
-                landing = true;
-    }
-    
-    public void doTakeOff(){
-        Airplane departingPlane = takeOffQueue.get(0);
-                //System.out.println(timeStamp + "  -  Plane " +departingPlane.getId() + " is taking off.");
-                waitTime = (minute - departingPlane.getTimeReady());
-                if(waitTime > maxWaitDeparting){
-                    maxWaitDeparting = waitTime;
-                }
-                totalWaitTimeDeparting += waitTime;
-                runwayFreeAt += TAKEOFF_WAIT_TIME;
-                takingOff = true;
+    public void clearRunway() {
+        // is a plane still landing?
+        if (landing) {
+            if (runwayIsFree) {
+                //System.out.println(timeStamp + "  -  Plane " + landingQueue.get(0).getId() + " has landed. Runway is free again");
+                landing = false;
                 
+                runwayStatus = "-";
+                planesLanded++;
+            }
+        }
+
+        //is a plane still taking off?
+        if (takingOff) {
+            if (runwayIsFree) {
+                //System.out.println(timeStamp + "  -  Plane " + takeOffQueue.get(0).getId() + " has taken off. Runway is free again");
+                takingOff = false;
+                
+                runwayStatus = "-";
+                planesDeparted++;
+                
+            }
+        }
     }
-    public void calculateAverages(){
+
+    public void doLanding() {
+        Airplane landingPlane = landingQueue.get(0);
+        //System.out.println(timeStamp + "  -  Plane " + landingPlane.getId() + " is landing.");
+        waitTime = (minute - landingPlane.getTimeReady());
+        if (waitTime > maxWaitLanding) {
+            maxWaitLanding = waitTime;
+        }
+        runwayStatus = landingPlane.getId() + "L";
+        totalWaitTimeLanding += waitTime;
+        runwayFreeAt = minute + LANDING_WAIT_TIME;
+        runwayIsFree = false;
+        landingQueue.remove(0);
+        landing = true;
+    }
+
+    public void doTakeOff() {
+        Airplane departingPlane = takeOffQueue.get(0);
+        //System.out.println(timeStamp + "  -  Plane " +departingPlane.getId() + " is taking off.");
+        waitTime = (minute - departingPlane.getTimeReady());
+        runwayStatus = departingPlane.getId() + "D";
+        if (waitTime > maxWaitDeparting) {
+            maxWaitDeparting = waitTime;
+        }
+        totalWaitTimeDeparting += waitTime;
+        runwayFreeAt = minute + TAKEOFF_WAIT_TIME;
+        runwayIsFree = false;
+        takingOff = true;
+        takeOffQueue.remove(0);
+
+    }
+
+    public void calculateAverages() {
         avgWaitTimeDepart = ((float) totalWaitTimeDeparting / planesDeparted) * 60;
         avgWaitTimeLanding = ((float) totalWaitTimeLanding / planesLanded) * 60;
         avgWaitMinutesDepart = (int) avgWaitTimeDepart / 60;
@@ -181,49 +190,50 @@ public class AirportSim {
         avgWaitMinutesLanding = (int) avgWaitTimeLanding / 60;
         avgWaitSecondsLanding = avgWaitTimeLanding % 60;
     }
-    
-    public void checkQueues(){
+
+    public void checkQueues() {
         waitingToDepart = takeOffQueue.size();
-        waitingToLand   = landingQueue.size();
-        
-        if(waitingToDepart > maxWaitingToDepart){
+        waitingToLand = landingQueue.size();
+
+        if (waitingToDepart > maxWaitingToDepart) {
             maxWaitingToDepart = waitingToDepart;
         }
-        
-        if(waitingToLand > maxWaitingToLand){
+
+        if (waitingToLand > maxWaitingToLand) {
             maxWaitingToLand = waitingToLand;
         }
     }
-    
-    public void printLine(){
-        String runwayFreeAtTime = minuteToTime(runwayFreeAt);
-        if (eventStatus.equals("-")){
-            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus +"\t\t  " + runwayStatus + "\t  "+ waitingToLand + "\t  " + waitingToDepart +
-                "\t  " + planesLanded + "\t  "+ planesDeparted + "\t  " + runwayFreeAtTime);
-        }else{
-            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus +"\t  " + runwayStatus + "\t  "+ waitingToLand + "\t  " + waitingToDepart +
-                "\t  " + planesLanded + "\t  "+ planesDeparted + "\t  " + runwayFreeAtTime);
+
+    public void printLine() {
+        runwayFreeAtTime = minuteToTime(runwayFreeAt);
+        if (eventStatus.equals("-")) {
+            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus + "\t\t  " + runwayStatus + "\t\t" + waitingToLand + "\t\t" + waitingToDepart
+                    + "\t\t" + planesLanded + "\t\t" + planesDeparted + "\t\t" + runwayFreeAtTime);
+        } else {
+            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus + "\t  " + runwayStatus + "\t\t" + waitingToLand + "\t\t" + waitingToDepart
+                    + "\t\t" + planesLanded + "\t\t" + planesDeparted + "\t\t" + runwayFreeAtTime);
         }
-        
+
     }
-    public void showResults(){
-        System.out.println(planesLanded + " planes have landed. \n" 
-                + planesDeparted + " planes have left.\n" 
-                + "Max wait time for landing: "+ maxWaitLanding+ " minutes.\n"
-                + "Max wait time for departure: " + maxWaitDeparting+ " minutes.\n"
-                + "Average wait time for landing : "+ avgWaitMinutesLanding + " minutes " + avgWaitSecondsLanding + " seconds.\n"
-                + "Average wait time for departure: " + avgWaitMinutesDepart + " minutes " + avgWaitSecondsDepart +  " seconds.\n"
+
+    public void showResults() {
+        System.out.println(planesLanded + " planes have landed. \n"
+                + planesDeparted + " planes have left.\n"
+                + "Max wait time for landing: " + maxWaitLanding + " minutes.\n"
+                + "Max wait time for departure: " + maxWaitDeparting + " minutes.\n"
+                + "Average wait time for landing : " + avgWaitMinutesLanding + " minutes " + avgWaitSecondsLanding + " seconds.\n"
+                + "Average wait time for departure: " + avgWaitMinutesDepart + " minutes " + avgWaitSecondsDepart + " seconds.\n"
                 + "Maximum number of flights waiting to land: " + maxWaitingToLand + ".\n"
-                + "Maximum number of flights waiting to depart: " + maxWaitingToDepart +".");
+                + "Maximum number of flights waiting to depart: " + maxWaitingToDepart + ".");
     }
-    
-    public String minuteToTime(int inTime){
+
+    public String minuteToTime(int inTime) {
         String time;
-        if (minute % MIN_PER_HOUR < 10) {
-                time = inTime / MIN_PER_HOUR + ":0" + minute % MIN_PER_HOUR; 
-            } else {
-                time = inTime / MIN_PER_HOUR + ":" + minute % MIN_PER_HOUR;
-            }
+        if (inTime % MIN_PER_HOUR < 10) {
+            time = inTime / MIN_PER_HOUR + ":0" + inTime % MIN_PER_HOUR;
+        } else {
+            time = inTime / MIN_PER_HOUR + ":" + inTime % MIN_PER_HOUR;
+        }
         return time;
     }
 }
