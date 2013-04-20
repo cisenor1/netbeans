@@ -53,8 +53,8 @@ public class AirportSim {
 
 
         //print Header
-        System.out.println("Minute\tPlane\tEvent\t\tRunway\t# Waiting\t# Waiting\tTotal Number\tTotal Number\tRunway Free");
-        System.out.println("\tNumber\tStatus\t\tStatus\t  To Land\t To Depart\t   Landed\t  Departed\t  At Time");
+        System.out.println("Minute\tPlane\tEvent\t\tRunway\t# Waiting\t# Waiting\tTotal Number\t  Total Number\t  Runway Free");
+        System.out.println("\tNumber\tStatus\t\tStatus\t  To Land\t To Depart\t   Landed\t    Departed\t    At Time");
 
 
         for (minute = 1; minute <= LENGTH_OF_SIMULATION_IN_HRS * MIN_PER_HOUR; minute++) {
@@ -207,17 +207,19 @@ public class AirportSim {
     public void printLine() {
         runwayFreeAtTime = minuteToTime(runwayFreeAt);
         if (eventStatus.equals("-")) {
-            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus + "\t\t  " + runwayStatus + "\t\t" + waitingToLand + "\t\t" + waitingToDepart
-                    + "\t\t" + planesLanded + "\t\t" + planesDeparted + "\t\t" + runwayFreeAtTime);
+            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus + "\t\t  " + runwayStatus + "\t    " 
+                    + waitingToLand + "\t\t    " + waitingToDepart
+                    + "\t\t      " + planesLanded + "         \t" + planesDeparted + "\t     " + runwayFreeAtTime);
         } else {
-            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus + "\t  " + runwayStatus + "\t\t" + waitingToLand + "\t\t" + waitingToDepart
-                    + "\t\t" + planesLanded + "\t\t" + planesDeparted + "\t\t" + runwayFreeAtTime);
+            System.out.println(timeStamp + "\t  " + eventPlane + "\t  " + eventStatus + "\t  " + runwayStatus + "\t    " 
+                    + waitingToLand + "\t\t    " + waitingToDepart
+                    + "\t\t      " + planesLanded + "          \t" + planesDeparted + "\t     " + runwayFreeAtTime);
         }
 
     }
 
     public void showResults() {
-        System.out.println(planesLanded + " planes have landed. \n"
+        System.out.println("\n\n" + planesLanded + " planes have landed. \n"
                 + planesDeparted + " planes have left.\n"
                 + "Max wait time for landing: " + maxWaitLanding + " minutes.\n"
                 + "Max wait time for departure: " + maxWaitDeparting + " minutes.\n"
