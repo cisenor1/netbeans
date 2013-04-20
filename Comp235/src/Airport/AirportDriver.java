@@ -9,11 +9,10 @@ package Airport;
  * @author Owner
  */
 public class AirportDriver {
-    
-    public static void main(String[] args){
-        
+
+    public static void main(String[] args) {
+
         AirportSim sim = new AirportSim();
         sim.run();
     }
-    
 }
