@@ -7,20 +7,22 @@ package Airport;
 import java.util.ArrayList;
 
 /**
- *
- * @author Owner
+ *  Airport flight control simulation.
+ * @author Craig Isenor
  */
 public class AirportSim {
     //class vars
 
     static final int MIN_PER_HOUR = 60;
     static final int AVG_ARRIVALS_PER_HOUR = 8;
+    static final int AVG_DEPARTURES_PER_HOUR = 8;
     static final int LENGTH_OF_SIMULATION_IN_HRS = 8;
     static final int LANDING_WAIT_TIME = 2;
     static final int TAKEOFF_WAIT_TIME = 3;
-    static boolean runwayIsFree = true;
     static boolean landing = false;
     static boolean takingOff = false;
+    
+    
     private ArrayList<Airplane> landingQueue = new ArrayList();
     private ArrayList<Airplane> takeOffQueue = new ArrayList();
     private int planesLanded = 0;
@@ -63,48 +65,27 @@ public class AirportSim {
             timeStamp = minuteToTime(minute);
 
             // init printed vars
-
             eventStatus = "-";
             eventPlane = "-";
 
-            checkQueues();
-
-            if (minute >= runwayFreeAt) {
-                runwayIsFree = true;
+            updateMaxQueues();
+            checkForNewPlanes();
+            if (isRunwayFree()){
+                isAnyoneUsingTheRunway();
+                // if the runway is free and there is a plane waiting to land, it gets to land, 
+                if (landingQueue.size() > 0) {
+                    doLanding();
+                }
+                else if (takeOffQueue.size() > 0) {
+                    doTakeOff();
+                }
             }
-
-            clearRunway();
-
-
-
-
-            // is there a plane about to land?
-            if (readyToLand()) {
-                landingQueue.add(new Airplane(planeNumber, minute));
-                //System.out.println(timeStamp + "  -  Plane " + planeNumber + " is ready to land.");
-                eventPlane = "" + planeNumber;
-                eventStatus = eventPlane + " arrives";
-                planeNumber++;
-
-            } else if (readyToTakeOff()) {
-                takeOffQueue.add(new Airplane(planeNumber, minute));
-                eventPlane = "" + planeNumber;
-                eventStatus = eventPlane + " departs";
-                //System.out.println(timeStamp + "  -  Plane " + planeNumber + " is ready to take off.");
-                planeNumber++;
-
-            }
-
-            // if the runway is free and there is a plane waiting to land, it gets to land, 
-
-            if (runwayIsFree && landingQueue.size() > 0) {
-                doLanding();
-            }
-            if (runwayIsFree && takeOffQueue.size() > 0) {
-                doTakeOff();
-            }
-
-
+            
+            
+            
+            
+            
+            
             printLine();
         }
 
@@ -116,44 +97,67 @@ public class AirportSim {
 
 
     }
-
-    public static boolean readyToLand() {
+    
+    /**
+     * Decides, using a random number, whether or not a plane is ready to land.
+     * @return whether the random minute is less than the number of arrivals per hour.
+     */
+    public static boolean newPlaneToLand() {
 
         return ((Math.random() * MIN_PER_HOUR) < AVG_ARRIVALS_PER_HOUR);
     }
-
-    public static boolean readyToTakeOff() {
-        return ((Math.random() * MIN_PER_HOUR) < AVG_ARRIVALS_PER_HOUR);
+    /**
+     * Decides, using a random number, whether or not a plane is ready to take off.
+     * @return whether the random minute is less than the number of departures per hour.
+     */
+    public static boolean newPlaneToDepart() {
+        return ((Math.random() * MIN_PER_HOUR) < AVG_DEPARTURES_PER_HOUR);
     }
+    /**
+     * Checks to see if any new planes have arrived.
+     */
+    public void checkForNewPlanes(){
+        if (newPlaneToLand()) {
+            landingQueue.add(new Airplane(planeNumber, minute));
+            eventPlane = "" + planeNumber;
+            eventStatus = eventPlane + " arrives";
+            planeNumber++;
 
-    public void clearRunway() {
-        // is a plane still landing?
+        } else if (newPlaneToDepart()) {
+            takeOffQueue.add(new Airplane(planeNumber, minute));
+            eventPlane = "" + planeNumber;
+            eventStatus = eventPlane + " departs";
+            planeNumber++;
+
+        }
+    }
+    
+    /** 
+     * Checks to see if the current plane is still using the runway. If not, clears the runway status and increments the appropriate counter.
+     */
+    public void isAnyoneUsingTheRunway() {
         if (landing) {
-            if (runwayIsFree) {
-                //System.out.println(timeStamp + "  -  Plane " + landingQueue.get(0).getId() + " has landed. Runway is free again");
                 landing = false;
-                
                 runwayStatus = "-";
                 planesLanded++;
-            }
         }
-
-        //is a plane still taking off?
-        if (takingOff) {
-            if (runwayIsFree) {
-                //System.out.println(timeStamp + "  -  Plane " + takeOffQueue.get(0).getId() + " has taken off. Runway is free again");
+        
+        else if (takingOff) {
                 takingOff = false;
-                
                 runwayStatus = "-";
                 planesDeparted++;
-                
-            }
+        }
+        else{
+            
         }
     }
-
+    
+    /**
+     * Initiates the landing. Removes the plane from the queue, sets runwayFreeAt to show when the runway will be free next.
+     */
     public void doLanding() {
+        
         Airplane landingPlane = landingQueue.get(0);
-        //System.out.println(timeStamp + "  -  Plane " + landingPlane.getId() + " is landing.");
         waitTime = (minute - landingPlane.getTimeReady());
         if (waitTime > maxWaitLanding) {
             maxWaitLanding = waitTime;
@@ -161,11 +165,12 @@ public class AirportSim {
         runwayStatus = landingPlane.getId() + "L";
         totalWaitTimeLanding += waitTime;
         runwayFreeAt = minute + LANDING_WAIT_TIME;
-        runwayIsFree = false;
         landingQueue.remove(0);
         landing = true;
     }
-
+    /**
+     * Initiates the take off. Removes the plane from the queue, sets runwayFreeAt to show when the runway will be free next.
+     */
     public void doTakeOff() {
         Airplane departingPlane = takeOffQueue.get(0);
         //System.out.println(timeStamp + "  -  Plane " +departingPlane.getId() + " is taking off.");
@@ -176,13 +181,17 @@ public class AirportSim {
         }
         totalWaitTimeDeparting += waitTime;
         runwayFreeAt = minute + TAKEOFF_WAIT_TIME;
-        runwayIsFree = false;
         takingOff = true;
         takeOffQueue.remove(0);
 
     }
-
+    
+    
+    /**
+     * Calculates all the averages needed to be displayed
+     */
     public void calculateAverages() {
+        
         avgWaitTimeDepart = ((float) totalWaitTimeDeparting / planesDeparted) * 60;
         avgWaitTimeLanding = ((float) totalWaitTimeLanding / planesLanded) * 60;
         avgWaitMinutesDepart = (int) avgWaitTimeDepart / 60;
@@ -190,8 +199,12 @@ public class AirportSim {
         avgWaitMinutesLanding = (int) avgWaitTimeLanding / 60;
         avgWaitSecondsLanding = avgWaitTimeLanding % 60;
     }
-
-    public void checkQueues() {
+    
+    
+    /**
+     * Updates the max number of flights waiting.
+     */
+    public void updateMaxQueues() {
         waitingToDepart = takeOffQueue.size();
         waitingToLand = landingQueue.size();
 
@@ -203,7 +216,21 @@ public class AirportSim {
             maxWaitingToLand = waitingToLand;
         }
     }
-
+    /**
+     * Checks to see if the runway is free.
+     */
+    public boolean isRunwayFree(){
+        
+            if (minute >= runwayFreeAt) {
+                return true;
+            }
+            return false;
+    }
+    
+    /**
+     * Outputs a new table row for each minute.
+     * 
+     **/
     public void printLine() {
         runwayFreeAtTime = minuteToTime(runwayFreeAt);
         if (eventStatus.equals("-")) {
@@ -217,9 +244,16 @@ public class AirportSim {
         }
 
     }
-
+    /**
+     * Outputs statistics in sentence form.
+     */
     public void showResults() {
-        System.out.println("\n\n" + planesLanded + " planes have landed. \n"
+        System.out.println("\n\n" + "Length of simulation:" + LENGTH_OF_SIMULATION_IN_HRS+ " hours.\n"
+                + "Average rate of arriving planes: " + AVG_ARRIVALS_PER_HOUR + ".\n"
+                + "Average rate of departing planes: " + AVG_DEPARTURES_PER_HOUR + ".\n"
+                + "Time for a plane to land: " + LANDING_WAIT_TIME + ".\n"
+                + "Time for a plane to depart: " + TAKEOFF_WAIT_TIME +".\n"
+                + planesLanded + " planes have landed. \n"
                 + planesDeparted + " planes have left.\n"
                 + "Max wait time for landing: " + maxWaitLanding + " minutes.\n"
                 + "Max wait time for departure: " + maxWaitDeparting + " minutes.\n"
