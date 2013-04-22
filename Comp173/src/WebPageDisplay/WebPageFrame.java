@@ -169,6 +169,9 @@ public class WebPageFrame extends JFrame implements ActionListener {
 
         // get the last URL from the array and use it. then remove if from the list.
         if (ev.getSource() == backButton) {
+            if (stack.size() == 1){
+                return;
+            }
             stack.pop();
             lastUrl = stack.peek();
             setEditorPaneURL(lastUrl);
@@ -184,7 +187,6 @@ public class WebPageFrame extends JFrame implements ActionListener {
             try {
                 webSite = new URL(urlField.getText());
                 stack.push(webSite);
-                System.out.println(stack.peek());
                 setEditorPaneURL(stack.peek());
 
             } catch (MalformedURLException ex) {
