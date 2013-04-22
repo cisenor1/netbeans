@@ -10,6 +10,7 @@ import java.awt.event.WindowEvent;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Stack;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
@@ -44,9 +45,17 @@ public class WebPageFrame extends JFrame implements ActionListener {
      * Back Button
      */
     private JButton backButton;
+    
+    /**
+     * Refresh Button
+     */
+    
+    private JButton refreshButton;
     /**
      * Keep track of most recent url (for the history stack)
      */
+    
+    private Stack<URL> stack =  new Stack();
     private int last;
     private URL currentURL = null;
     private URL lastUrl = null;
@@ -64,10 +73,10 @@ public class WebPageFrame extends JFrame implements ActionListener {
                 HyperlinkEvent.EventType type = e.getEventType();
 
                 if (type == HyperlinkEvent.EventType.ACTIVATED) {
-                    previousURLs.add(currentURL);
+                    
                     link = e.getURL();
-                    setEditorPaneURL(link);
-                    currentURL = link;
+                    stack.push(link);
+                    setEditorPaneURL(stack.peek());
                 }
 
             }
@@ -78,10 +87,12 @@ public class WebPageFrame extends JFrame implements ActionListener {
         webPagePane = new JEditorPane();
         urlField = new JTextField("http://", 40);
         backButton = new JButton("Back");
+        refreshButton = new JButton("Refresh");
         
         // Set initial properties of GUI components
         webPagePane.setEditable(false);
         webPagePane.addHyperlinkListener(linkListener);
+        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         // Register callbacks
         urlField.addActionListener(this);
@@ -111,6 +122,7 @@ public class WebPageFrame extends JFrame implements ActionListener {
         topPanel.add(new JLabel("Web Site: "));
         topPanel.add(urlField);
         topPanel.add(new JPanel());
+        topPanel.add(refreshButton);
 
         // The webPagePane is viewed through a scrollPane
         JScrollPane scroller = new JScrollPane(webPagePane);
@@ -136,6 +148,7 @@ public class WebPageFrame extends JFrame implements ActionListener {
         if (url != null) {
             try {
                 webPagePane.setPage(url);
+                currentURL = url;
 
                 urlField.setText(url.toString());
             } catch (IOException ex) {
@@ -156,36 +169,35 @@ public class WebPageFrame extends JFrame implements ActionListener {
 
         // get the last URL from the array and use it. then remove if from the list.
         if (ev.getSource() == backButton) {
-            if (previousURLs.size() <= 0) {
-                return;
-            }
-            last = previousURLs.size() - 1;
-            lastUrl = previousURLs.get(last);
-            previousURLs.remove(last);
+            stack.pop();
+            lastUrl = stack.peek();
             setEditorPaneURL(lastUrl);
+        }
+       
+        if (ev.getSource() == refreshButton){
+            setEditorPaneURL(stack.peek());
         }
 
 
         if (ev.getSource() == urlField) {
             URL webSite;
             try {
-                previousURLs.add(currentURL);
                 webSite = new URL(urlField.getText());
-                setEditorPaneURL(webSite);
-                currentURL = webSite;
+                stack.push(webSite);
+                System.out.println(stack.peek());
+                setEditorPaneURL(stack.peek());
 
             } catch (MalformedURLException ex) {
                 webPagePane.setText(urlField.getText() + " has a bad URL format");
             }
         }
     }
+    
 
     /**
      * This allows us to run this class as a simple application. We can also use
      * this class as a re-usable component
-     *
-     * @param args Not Used
-     */
+     **/
     public static void main(String[] args) {
         new WebPageFrame();
     }
